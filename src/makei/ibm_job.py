@@ -7,20 +7,20 @@ from contextlib import closing
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-import ibm_db_dbi
+import pyodbc
 
 from makei.utils import format_datetime
 
 
 class IBMJob():
     job_id: str
-    conn: ibm_db_dbi.Connection
+    conn: pyodbc.Connection
 
     def __init__(self):
         try:
-            self.conn = ibm_db_dbi.connect()
-            # https://kadler.io/2018/09/20/using-python-ibm-db-with-un-journaled-files.html#
-            self.conn.set_option({ibm_db_dbi.SQL_ATTR_TXN_ISOLATION: ibm_db_dbi.SQL_TXN_NO_COMMIT})
+            self.conn = pyodbc.connect("DSN=PYDB")
+            
+            self.conn.autocommit = True
             self.job_id = self.run_sql("VALUES(QSYS2.JOB_NAME)")[0][0][0]
         # pylint: disable=broad-except
         except Exception as e:
@@ -36,7 +36,7 @@ class IBMJob():
             print(f">  {cmd}")
         with closing(self.conn.cursor()) as cursor:
             try:
-                cursor.callproc("qsys2.qcmdexc", [cmd])
+                cursor.execute("CALL QSYS2.QCMDEXC(?)", (cmd,))
                 return True
             # pylint: disable=broad-except
             except Exception:
@@ -50,9 +50,10 @@ class IBMJob():
     def run_sql(self, sql, ignore_errors=False, log: bool = False):
         with closing(self.conn.cursor()) as cursor:
             try:
+                sql_clean = sql.rstrip().rstrip(';')
                 if log:
-                    print(f"[QUERY] {sql}")
-                cursor.execute(sql)
+                    print(f"[QUERY] {sql_clean}")
+                cursor.execute(sql_clean)
                 try:
                     column_names = [column[0] for column in cursor.description]
                     rows = cursor.fetchall()
