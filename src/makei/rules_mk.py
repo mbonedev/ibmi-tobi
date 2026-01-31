@@ -41,15 +41,16 @@ class MKRule:
 
         if len(self.commands) == 0:
             for dependency in self.dependencies:
-                if is_source_file(dependency) and decompose_filename(dependency)[-1] == "":
-                    if (self.containing_dir / dependency).exists():
+                dependency1 = dependency.replace(r'\#', '#')
+                if is_source_file(dependency1) and decompose_filename(dependency1)[-1] == "":
+                    if (self.containing_dir / dependency1).exists():
                         self.is_source_file = True
-                        self.source_file = '$(d)/' + dependency
+                        self.source_file = '$(d)/' + dependency1
                         self.dependencies.remove(dependency)
                         return
             try:
-                self.source_file = self.dependencies[0]
-                self.dependencies.remove(self.source_file)
+                self.source_file = self.dependencies[0].replace(r'\#', '#')
+                self.dependencies.remove(self.dependencies[0])
             except IndexError:
                 print(f"No source file found for {self.target} in {self.dependencies}")
         else:
@@ -57,10 +58,12 @@ class MKRule:
             self.commands.append(f"@$(call echo_success_cmd,End of creating {self.target})")
 
     def __str__(self):
-        variable_assignment = ''.join(f"{self.target}: {variable}\n" for variable in self.variables)
+        # ESCAPE the target name
+        escaped_target = self.target.replace(r'\#', '__H')
+        variable_assignment = ''.join(f"{escaped_target}: {variable}\n" for variable in self.variables)
         if len(self.commands) > 0:
-            return f"{self.target}_CUSTOM_RECIPE=true" + '\n' + f"{self.target} : " \
-                                                                f"{' '.join(self._parse_dependencies())}" + '\n' + \
+            return f"{escaped_target}_CUSTOM_RECIPE=true" + '\n' + f"{escaped_target} : " \
+                                                                   f"{' '.join(self._parse_dependencies())}" + '\n' + \
                 ''.join(
                     ['\t' + cmd + '\n' for cmd in self.commands]) + variable_assignment
         try:
@@ -74,9 +77,11 @@ class MKRule:
             else:
                 recipe_name = decompose_filename(self.source_file)[2].upper() + '_TO_' + self.target.split(".")[
                     -1].upper() + '_RECIPE'
-            return f"{self.target}_SRC={self.source_file}" + '\n' + f"{self.target}_DEP" \
-                                                                    f"={' '.join(self.dependencies)}" + '\n' + \
-                f"{self.target}_RECIPE={recipe_name}" + '\n' + variable_assignment
+            if '#' in self.source_file:
+                self.source_file = self.source_file.replace('#', '__H')
+            return f"{escaped_target}_SRC={self.source_file}" + '\n' + f"{escaped_target}_DEP" \
+                                                                       f"={' '.join(self.dependencies)}" + '\n' + \
+                f"{escaped_target}_RECIPE={recipe_name}" + '\n' + variable_assignment
         except AttributeError:
             print(f"No source file found for {self.target}")
             sys.exit(1)
@@ -88,6 +93,9 @@ class MKRule:
         """Parses the dependencies of a rule"""
         result = []
         for dependency in self.dependencies:
+            # Handle escaped '#'
+            if dependency.startswith(r'\#'):
+                dependency = dependency[1:]
             if is_source_file(dependency) and decompose_filename(dependency)[-1] == "":
                 if (self.containing_dir / dependency).exists():
                     result.append('$(d)/' + dependency)
@@ -410,7 +418,9 @@ class RulesMk:
 
         for target_group, targets in self.targets.items():
             if len(targets) > 0:
-                rules_str += f"{target_group} := {' '.join(targets)}\n"
+                # ESCAPE targets that contain $
+                escaped_targets = [t.replace(r'\#', '__H') for t in targets]
+                rules_str += f"{target_group} := {' '.join(escaped_targets)}\n"
         rules_str += "\n\n"
         rules_str += ''.join(map(str, map(rules_middleware, self.rules)))
         return rules_str

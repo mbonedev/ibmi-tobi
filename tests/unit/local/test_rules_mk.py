@@ -1190,3 +1190,75 @@ ORD700A.TRG_SRC=ORD700A.SYSTRG
 ORD700A.TRG_DEP=TRGPGM.PGM MYPF1.FILE
 ORD700A.TRG_RECIPE=SYSTRG_TO_TRG_RECIPE
 """)
+
+
+def test_hash():
+    # Test loading from a valid file
+    rules_mk = RulesMk.from_file(data_dir / "hash.rules.mk", data_dir)
+    expected_targets = {
+        "TRGs": [],
+        "DTAARAs": [],
+        "DTAQs": [],
+        "SQLs": [],
+        "BNDDs": [],
+        "PFs": ['\\#SAMPLE.FILE'],
+        "LFs": [],
+        "DSPFs": [],
+        "PRTFs": [],
+        "CMDs": [],
+        "MODULEs": ['HE\\#LLO.MODULE'],
+        "SRVPGMs": [],
+        "PGMs": [],
+        "MENUs": [],
+        "PNLGRPs": [],
+        "QMQRYs": [],
+        "WSCSTs": [],
+        "MSGs": [],
+    }
+    assert rules_mk.src_obj_mapping["#SAMPLE.PF"] == ['\\#SAMPLE.FILE']
+    assert rules_mk.src_obj_mapping["HE#LLO.RPGLE"] == ['HE\\#LLO.MODULE']
+    assert rules_mk.containing_dir == data_dir
+    assert rules_mk.subdirs == []
+    assert rules_mk.targets == expected_targets
+
+    # Test #SAMPLE.FILE rule
+    assert rules_mk.rules[0].variables == []
+    assert rules_mk.rules[0].commands == []
+    assert rules_mk.rules[0].dependencies == []
+    assert rules_mk.rules[0].include_dirs == []
+    assert rules_mk.rules[0].target == r"\#SAMPLE.FILE"
+    assert rules_mk.rules[0].source_file == "#sample.pf"
+    assert (
+        str(rules_mk.rules[0])
+        == """__HSAMPLE.FILE_SRC=__Hsample.pf
+__HSAMPLE.FILE_DEP=
+__HSAMPLE.FILE_RECIPE=PF_TO_FILE_RECIPE
+""")
+    # Test HELLO#.MODULE rule
+    assert rules_mk.rules[1].variables == []
+    assert rules_mk.rules[1].commands == []
+    assert rules_mk.rules[1].dependencies == []
+    assert rules_mk.rules[1].include_dirs == []
+    assert rules_mk.rules[1].target == r"HE\#LLO.MODULE"
+    assert rules_mk.rules[1].source_file == "he#llo.rpgle"
+    assert (
+        str(rules_mk.rules[1])
+        == """HE__HLLO.MODULE_SRC=he__Hllo.rpgle
+HE__HLLO.MODULE_DEP=
+HE__HLLO.MODULE_RECIPE=RPGLE_TO_MODULE_RECIPE
+""")
+
+    # Test full RulesMk string output
+    assert (
+        str(rules_mk)
+        == """PFs := __HSAMPLE.FILE
+MODULEs := HE__HLLO.MODULE
+
+
+__HSAMPLE.FILE_SRC=__Hsample.pf
+__HSAMPLE.FILE_DEP=
+__HSAMPLE.FILE_RECIPE=PF_TO_FILE_RECIPE
+HE__HLLO.MODULE_SRC=he__Hllo.rpgle
+HE__HLLO.MODULE_DEP=
+HE__HLLO.MODULE_RECIPE=RPGLE_TO_MODULE_RECIPE
+""")

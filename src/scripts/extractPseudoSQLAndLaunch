@@ -7,6 +7,7 @@ precmd=$3
 postcmd=$4
 object=$5
 source=$6
+source="${source//\\#/#}"
 output=$7
 text_command=$8
 VPATH=$9

@@ -237,9 +237,10 @@ def read_and_filter_rules_mk(source_names):
             if not line or line.startswith("#") or ":" not in line:
                 continue  # skip blank lines, comments, or malformed lines
             target, deps = map(str.strip, line.split(":", 1))
-            dep_list = [dep.upper() for dep in deps.split()]
+            dep_list = [dep.upper().replace(r'\#', '#') for dep in deps.split()]
             if source_path.name.upper() in dep_list:
-                build_targets.append(target)
+                escaped_target = target.replace(r'\#', '__H')
+                build_targets.append(escaped_target)
     if not build_targets:
         raise ValueError(f"No target found in Rules.mk for source file '{source_path.name}'")
     return build_targets
@@ -267,7 +268,8 @@ def handle_compile(args):
             source_names.append(name)
             targets_from_rule = read_and_filter_rules_mk(source_names)
             targets.extend([t.upper() for t in targets_from_rule])
-    print(colored("targets: " + ', '.join(targets), Colors.OKBLUE))
+    targets1 = ([t.upper().replace('__H', '#') for t in targets])
+    print(colored("targets: " + ', '.join(targets1), Colors.OKBLUE))
     build_env = BuildEnv(targets, args.make_options, get_override_vars(args), trace=args.log)
     if args.log:
         build_env.dump_resolved_makefile()
