@@ -105,7 +105,7 @@ def parse_all_variables(input_str: str) -> str:
     return result
 
 
-def objlib_to_path(lib, object_name=None) -> str:
+def objlib_to_path(lib, object_name=None, iasp: str = "") -> str:
     """Returns the path for the given objlib in IFS
 
     >>> objlib_to_path("TONGKUN")
@@ -113,14 +113,15 @@ def objlib_to_path(lib, object_name=None) -> str:
     >>> objlib_to_path("TONGKUN", "SAMREF.FILE")
     '/QSYS.LIB/TONGKUN.LIB/SAMREF.FILE'
     """
+    iasp_prefix = f"/{iasp}" if iasp else ""
     if not lib:
         raise ValueError()
     if lib == "QSYS":
-        return f"/QSYS.LIB/{object_name}"
+        return f"{iasp_prefix}/QSYS.LIB/{object_name}"
     if object_name is not None:
-        return f"/QSYS.LIB/{lib}.LIB/{object_name}"
+        return f"{iasp_prefix}/QSYS.LIB/{lib}.LIB/{object_name}"
     lib = lib.replace("#", "\\#")
-    return f"/QSYS.LIB/{lib}.LIB"
+    return f"{iasp_prefix}/QSYS.LIB/{lib}.LIB"
 
 
 def create_temp_file(file_name: str) -> Path:

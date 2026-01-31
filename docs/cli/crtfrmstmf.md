@@ -42,3 +42,7 @@ usage: crtfrmstmf [-h] -f <srcstmf> -o <object> [-l <library>] -c <cmd> [-p [<pa
 
   Output the joblog to the specified json file.
 
+- **--iasp**
+
+  IASP device name (leave empty for *SYSBAS)
+

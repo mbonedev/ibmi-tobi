@@ -1,3 +1,4 @@
+- Developed IASP support with validation
 * Fri Jan 23 2026 Het Patel <het.patel@ibm.com> - 3.1.1
 - Added to escape library names containing the # symbol.
 - Fixed source name case sensitivity in `makei compile` and `rules.mk`

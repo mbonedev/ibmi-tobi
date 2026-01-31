@@ -30,7 +30,8 @@ tmppipe=$(mktemp)
 exitCode=0
 echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
 
-[[ ! -z "$curlib" ]] && liblist -c "$curlib"
+
+
 
 # Adding preUsrlibl to liblist in reverse to preserve correct order
 if [[ ! -z "$preUsrlibl" ]]; then
@@ -41,14 +42,6 @@ if [[ ! -z "$preUsrlibl" ]]; then
   done
 fi
 
-[[ ! -z "$postUsrlibl" ]] && liblist -al $postUsrlibl
-
-if [ ! -z "$tmpCurlib" ]; then
-  echo ">> Temporarily set curlib to $tmpCurlib"
-  (liblist -d "$curlib" && liblist -af "$curlib") || true
-  liblist -c "$tmpCurlib"
-fi
-
 IFS=$'\\n'
 echo "$IBMiEnvCmd"
 if [ ! -z "$IBMiEnvCmd" ]; then
@@ -56,6 +49,18 @@ if [ ! -z "$IBMiEnvCmd" ]; then
     [[ ! -z "$envcmd" ]] && cl "$envcmd"
   done
 fi
+
+
+
+if [ ! -z "$tmpCurlib" ]; then
+  echo ">> Temporarily set curlib to $tmpCurlib"
+  (liblist -d "$curlib" && liblist -af "$curlib") || true
+  liblist -c "$tmpCurlib"
+fi
+
+[[ ! -z "$curlib" ]] && liblist -c "$curlib"
+
+[[ ! -z "$postUsrlibl" ]] && liblist -al $postUsrlibl
 
 cl "CHGJOB LOG(4 00 *SECLVL)"
 echo ">> executing command: ${cmd}"

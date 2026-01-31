@@ -543,6 +543,7 @@ curlib="$(curlib)" \
 preUsrlibl="$(preUsrlibl)" \
 postUsrlibl="$(postUsrlibl)" \
 IBMiEnvCmd="$(IBMiEnvCmd)" \
+iasp="$(iasp)"\
 $(eval directory := $(subst /,_,$(patsubst $(SRCPATH)/%,%,$(dir $<)))) \
 $(eval directory := $(if $(filter ._,$(directory)),,$(directory))) \
 $(eval file := $(subst .,_,$(notdir $@))) \
@@ -1779,6 +1780,7 @@ test:
 	echo "OBJLIB:			$(call ESCAPE_FOR_RECIPE,$(OBJLIB))"; \
 	echo "LIBL:			$(call ESCAPE_FOR_RECIPE,$(OBJLIB))"; \
 	echo "IBMiEnvCmd:		$(IBMiEnvCmd)"; \
+	echo "iasp:				$(iasp)"; \
 	echo "IBMiRelease:		$(IBMiRelease)"; \
 	echo "COMPATIBILITYMODE:$(COMPATIBILITYMODE)"; \
 	echo "INCDIR:           $(INCDIR)"; \

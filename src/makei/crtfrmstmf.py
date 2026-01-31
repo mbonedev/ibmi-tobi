@@ -7,7 +7,6 @@ import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
-
 from makei.ibm_job import IBMJob, save_joblog_json
 from makei.utils import format_datetime, objlib_to_path, validate_ccsid, make_include_dirs_absolute
 
@@ -49,11 +48,12 @@ class CrtFrmStmf():
     obj_type: str
     precmd: str
     postcmd: str
+    iasp: str
 
     def __init__(self, srcstmf: str, obj: str, lib: str, cmd: str, rcdlen: int, tgt_ccsid: Optional[str] = None,
                  parameters: Optional[str] = None, env_settings: Optional[Dict[str, str]] = None,
-                 joblog_path: Optional[str] = None, tmp_lib="QTEMP", tmp_src="QSOURCE", precmd="",
-                 postcmd="", output="") -> None:
+                 joblog_path: Optional[str] = None, tmp_lib=None, tmp_src="QSOURCE", precmd="",
+                 postcmd="", output="", iasp: str = "") -> None:
         # pylint: disable=too-many-arguments
         self.job = IBMJob()
         self.setup_job = IBMJob()
@@ -66,13 +66,16 @@ class CrtFrmStmf():
         self.env_settings = env_settings if env_settings is not None else {}
         self.joblog_path = joblog_path
         self.job.run_cl("CHGJOB LOG(4 00 *SECLVL)", log=False)
-        self.tmp_lib = tmp_lib
         self.tmp_src = tmp_src
         self.obj_type = COMMAND_MAP[self.cmd]
         self.precmd = precmd
         self.postcmd = postcmd
         self.output = output
-
+        if "iasp" in self.env_settings and self.env_settings["iasp"]:
+            self.iasp = self.env_settings["iasp"]
+        else:
+            self.iasp = ""
+        self.tmp_lib = resolve_tmp_lib(self.lib, self.iasp)
         if tgt_ccsid is None or not validate_ccsid(tgt_ccsid):
             ccsid = retrieve_ccsid(srcstmf)
             if ccsid in ["1208", "819"]:
@@ -82,10 +85,11 @@ class CrtFrmStmf():
         else:
             self.ccsid_c = tgt_ccsid
 
-        if check_object_exists(self.obj, self.lib, self.obj_type):
+        if check_object_exists(self.obj, self.lib, self.obj_type, self.iasp):
             if self.cmd == "CRTPF":
                 # For physical files, delete all its logical file dependencies
-                self.back_up_obj_list = get_physical_dependencies(self.obj, self.lib, True, self.setup_job)
+                self.back_up_obj_list = get_physical_dependencies(
+                    self.obj, self.lib, True, self.setup_job, iasp=self.iasp)
             else:
                 self.back_up_obj_list = [(self.obj, self.lib, self.obj_type)]
         else:
@@ -101,7 +105,7 @@ class CrtFrmStmf():
         self.setup_env()
 
         run_datetime = datetime.now()
-
+        iasp_prefix = f"/{self.iasp}" if self.iasp else ""
         # Run the pre_cmd
         if self.precmd:
             self.job.run_cl(self.precmd, False, True)
@@ -114,7 +118,7 @@ class CrtFrmStmf():
         # Copy the source stream file to the temp source file
         self.job.run_cl(
             f'CPYFRMSTMF FROMSTMF("{self.srcstmf}") '
-            f'TOMBR("/QSYS.LIB/{self.tmp_lib}.LIB/{self.tmp_src}.FILE/{self.obj}.MBR") MBROPT(*REPLACE)')
+            f'TOMBR("{iasp_prefix}/QSYS.LIB/{self.tmp_lib}.LIB/{self.tmp_src}.FILE/{self.obj}.MBR") MBROPT(*REPLACE)')
 
         self._backup_and_delete_objs()
 
@@ -150,7 +154,13 @@ class CrtFrmStmf():
         return success
 
     def setup_env(self):
+
+        # if "IBMiEnvCmd" in self.env_settings and self.env_settings["IBMiEnvCmd"]:
+        #     for cmd in self.env_settings["IBMiEnvCmd"].split("\\n"):
+        #         self.job.run_cl(cmd, log=True)
+
         if "curlib" in self.env_settings and self.env_settings["curlib"]:
+            # self.job.run_cl("SETASPGRP ASPGRP(IASP1)", log=True)
             self.job.run_cl(f"CHGCURLIB CURLIB({self.env_settings['curlib']})", log=True)
 
         if "preUsrlibl" in self.env_settings and self.env_settings["preUsrlibl"]:
@@ -161,10 +171,6 @@ class CrtFrmStmf():
             for libl in self.env_settings["postUsrlibl"].split():
                 self.job.run_cl(f"ADDLIBLE LIB({libl}) POSITION(*LAST)", ignore_errors=True, log=True)
 
-        if "IBMiEnvCmd" in self.env_settings and self.env_settings["IBMiEnvCmd"]:
-            for cmd in self.env_settings["IBMiEnvCmd"].split("\\n"):
-                self.job.run_cl(cmd, log=True)
-
     def _retrieve_current_library(self):
         records, _ = self.job.run_sql(
             "SELECT SYSTEM_SCHEMA_NAME AS LIBRARY FROM QSYS2.LIBRARY_LIST_INFO WHERE TYPE='CURRENT'")
@@ -174,11 +180,13 @@ class CrtFrmStmf():
         return "*NONE"
 
     def _update_event_file(self, ccsid):
+        alias_name = f"{self.obj}_EVFALIAS"
+
         self.setup_job.run_sql(
-            f"CREATE OR REPLACE ALIAS {self.tmp_lib}.{self.obj} FOR {self.lib}.EVFEVENT ({self.obj});")
+            f"CREATE OR REPLACE ALIAS {self.tmp_lib}.{alias_name} FOR {self.lib}.EVFEVENT ({self.obj});")
         results = self.setup_job.run_sql(" ".join(["SELECT",
                                                    f"CAST(EVFEVENT AS VARCHAR(300) CCSID {ccsid}) AS FULL",
-                                                   f"FROM {self.tmp_lib}.{self.obj}",
+                                                   f"FROM {self.tmp_lib}.{alias_name}",
                                                    f"WHERE Cast(evfevent As Varchar(300) Ccsid {ccsid})",
                                                    f"LIKE 'FILEID%{self.tmp_lib}/{self.tmp_src}({self.obj})%'",
                                                    ]))[0]
@@ -186,19 +194,19 @@ class CrtFrmStmf():
             parts = results[0][0].split()
         else:
             return
-        self.setup_job.run_sql(" ".join([f"Update {self.tmp_lib}.{self.obj}",
+        self.setup_job.run_sql(" ".join([f"Update {self.tmp_lib}.{alias_name}",
                                          "Set evfevent =",
                                          "(",
                                          f"SELECT Cast(evfevent As Varchar(24) Ccsid {ccsid})",
                                          f"CONCAT '{len(self.srcstmf):03} {self.srcstmf} {parts[-2]} {parts[-1]}'",
-                                         f"FROM {self.tmp_lib}.{self.obj}",
+                                         f"FROM {self.tmp_lib}.{alias_name}",
                                          f"WHERE Cast(evfevent As Varchar(300) Ccsid {ccsid})",
                                          f"LIKE 'FILEID%{self.tmp_lib}/{self.tmp_src}({self.obj})%'",
                                          "FETCH First 1 Row Only)",
                                          f"WHERE Cast(evfevent As Varchar(300) Ccsid {ccsid})",
                                          f"LIKE 'FILEID%{self.tmp_lib}/{self.tmp_src}({self.obj})%'"]))
 
-        self.setup_job.run_sql(f"DROP ALIAS {self.tmp_lib}.{self.obj}")
+        self.setup_job.run_sql(f"DROP ALIAS {self.tmp_lib}.{alias_name}")
 
     def _backup_and_delete_objs(self):
         obj_list = self.back_up_obj_list
@@ -322,28 +330,35 @@ def cli():
         "--output",
         metavar='<output>',
     )
+    parser.add_argument(
+        "--iasp",
+        help='IASP device name (leave empty for *SYSBAS)',
+        metavar='<iasp>',
+        default=""
+    )
 
     args = parser.parse_args()
     srcstmf_absolute_path = str(Path(args.stream_file.strip()).resolve())
     env_settings = {}
-    if "curlib" in os.environ:
-        env_settings["curlib"] = sanitize_lib_envvar(os.environ["curlib"])
-    if "preUsrlibl" in os.environ:
-        env_settings["preUsrlibl"] = sanitize_lib_envvar(os.environ["preUsrlibl"])
-    if "postUsrlibl" in os.environ:
-        env_settings["postUsrlibl"] = sanitize_lib_envvar(os.environ["postUsrlibl"])
     if "IBMiEnvCmd" in os.environ:
         env_settings["IBMiEnvCmd"] = os.environ["IBMiEnvCmd"]
+    if "curlib" in os.environ:
+        env_settings["curlib"] = os.environ["curlib"]
+    if "preUsrlibl" in os.environ:
+        env_settings["preUsrlibl"] = os.environ["preUsrlibl"]
+    if "postUsrlibl" in os.environ:
+        env_settings["postUsrlibl"] = os.environ["postUsrlibl"]
+    if "iasp" in os.environ:
+        env_settings["iasp"] = os.environ["iasp"]
 
     handle = CrtFrmStmf(srcstmf_absolute_path, args.object.strip(),
-                        args.library.strip(), args.command.strip(), args.rcdlen, args.ccsid, args.parameters,
-                        env_settings, args.save_joblog, precmd=args.precmd, postcmd=args.postcmd, output=args.output)
-
+                        args.library.strip(), args.command.strip(), args.rcdlen, args.ccsid,
+                        args.parameters, env_settings, args.save_joblog, precmd=args.precmd,
+                        postcmd=args.postcmd, output=args.output, iasp=args.iasp)
     print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
     success = handle.run()
     print("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
     sys.exit(0 if success else 1)
-
 
 # Helper functions
 
@@ -358,30 +373,18 @@ def _get_attr(srcstmf: str):
     return attrs
 
 
-# Library names that include the hash symbol need to be
-# escaped otherwise make will treat characters after the
-# hash as a comment.
-#
-# This escaping is performed in `build.py`.
-#
-# Here we are replacing the escaped characters with the
-# non-escaped hash character, reversing the escaping
-# needed by make.
-def sanitize_lib_envvar(lib_or_libl: str):
-    return lib_or_libl.replace("\\#", "#")
-
-
 def retrieve_ccsid(srcstmf: str) -> str:
     return _get_attr(srcstmf)["CCSID"]
 
 
-def check_object_exists(obj: str, lib: str, obj_type: str) -> bool:
-    obj_path = Path(f"/QSYS.LIB/{lib}.LIB/{obj}.{obj_type}")
+def check_object_exists(obj: str, lib: str, obj_type: str, iasp: str = "") -> bool:
+    iasp_prefix = f"/{iasp}" if iasp else ""
+    obj_path = Path(f"{iasp_prefix}/QSYS.LIB/{lib}.LIB/{obj}.{obj_type}")
     return obj_path.exists()
 
 
 def get_physical_dependencies(obj: str, lib: str, include_self: bool, job: Optional[IBMJob] = None,
-                              verbose: bool = False) -> List[Tuple[str, str, str]]:
+                              verbose: bool = False, iasp: str = "") -> List[Tuple[str, str, str]]:
     """Get the dependencies for a given physical file object
 
     Args:
@@ -390,13 +393,14 @@ def get_physical_dependencies(obj: str, lib: str, include_self: bool, job: Optio
         include_self (bool): whether to include the physical file itself in the result
         job (IBMJob, optional): Job used to run the commands. If none is set, a new job will be created. Defaults to
         None.
-        verbose (bool, optional): Defaults to False.
+        verbose (bool, optional): Defaults to False
+        iasp (str, optional): IASP name. Defaults to "".
 
     Returns:
         List[Tuple[str, str, str]]: List of (obj, lib, obj_type) tuples
     """
-
-    lib_path = Path(f'/QSYS.LIB/{lib}.LIB')
+    iasp_prefix = f"/{iasp}" if iasp else ""
+    lib_path = Path(f'{iasp_prefix}/QSYS.LIB/{lib}.LIB')
     pf_path = lib_path / f"{obj}.FILE"
     if not pf_path.exists():
         if verbose:
@@ -433,10 +437,22 @@ def delete_objects(obj_list: List[Tuple[str, str, str]], verbose: bool = False):
                     print(f"{obj_path} not deleted.")
 
 
+def is_iasp_library(lib: str, iasp: str = "") -> bool:
+    if not iasp:
+        return False
+    lib_path = Path(f"/{iasp}/QSYS.LIB/{lib}.LIB")
+    return lib_path.exists()
+
+
+def resolve_tmp_lib(lib: str, iasp: str = "") -> str:
+    if is_iasp_library(lib, iasp):
+        return lib
+    return "QTEMP"
+
+
 def filter_joblogs(record: Dict[str, Any]) -> bool:
     """Filter out the joblog records that are not related to the compile job"""
     # pylint: disable=too-many-return-statements
-
     msgid = record["MESSAGE_ID"]
     msgtext = record["MESSAGE_TEXT"]
     if msgid is None:

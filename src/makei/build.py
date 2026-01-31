@@ -67,7 +67,7 @@ class BuildEnv:
         self.iproj_json_path = self.src_dir / "iproj.json"
         self.iproj_json = IProjJson.from_file(self.iproj_json_path)
         self.color = support_color()
-
+        self.iasp = self.iproj_json.iasp
         if len(self.iproj_json.set_ibm_i_env_cmd) > 0:
             cmd_list = self.iproj_json.set_ibm_i_env_cmd
             self.ibmi_env_cmds = "\\n".join(cmd_list)
@@ -166,6 +166,7 @@ class BuildEnv:
             incdir = '\'' + '\' \''.join(include_path) + '\''
         elif len(include_path) == 1:
             incdir = include_path[0].upper()
+
         with target_file_path.open("w", encoding="utf8") as file:
             # Library names that include the hash symbol need to be
             # escaped otherwise make will treat characters after the
@@ -185,6 +186,7 @@ INCDIR := {incdir}
 unquotedINCDIR := {' '.join(include_path)}
 doublequotedINCDIR := {incdir.replace("'", "''")}
 IBMiEnvCmd := {self.ibmi_env_cmds}
+iasp := {self.iasp}
 COLOR_TTY := {'true' if self.color else 'false'}
 
 """)
@@ -193,7 +195,8 @@ COLOR_TTY := {'true' if self.color else 'false'}
                 file.write(
                     f"TGTCCSID_{subdir.absolute()} := {dir_var_map[subdir].build['tgt_ccsid']}\n")
                 file.write(
-                    f"OBJPATH_{subdir.absolute()} := {objlib_to_path(dir_var_map[subdir].build['objlib'])}\n")
+                    f"OBJPATH_{subdir.absolute()} := "
+                    f"{objlib_to_path(dir_var_map[subdir].build['objlib'], iasp=self.iasp)}\n")
 
             # for rules_mk in rules_mks:
             #     with rules_mk.open('r') as rules_mk_file:
@@ -226,8 +229,8 @@ COLOR_TTY := {'true' if self.color else 'false'}
         return not self.failed_targets
 
     def _post_make(self):
-        for tmp_file in self.tmp_files:
-            tmp_file.unlink(missing_ok=True)
+        # for tmp_file in self.tmp_files:
+        #     tmp_file.unlink(missing_ok=True)
         print(colored("Objects:            ", Colors.BOLD), colored(f"{len(self.failed_targets)} failed", Colors.FAIL),
               colored(f"{len(self.success_targets)} succeed", Colors.OKGREEN),
               f"{len(self.success_targets) + len(self.failed_targets)} total")
