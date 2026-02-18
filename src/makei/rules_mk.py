@@ -9,7 +9,8 @@ from typing import Callable, Dict, List, Optional, TYPE_CHECKING
 
 from makei.const import (FILE_TARGETGROUPS_MAPPING, TARGET_GROUPS, TARGET_TARGETGROUPS_MAPPING, MEMBER_TEXT_LINES,
                          METADATA_HEADER, TEXT_HEADER)
-from makei.utils import decompose_filename, is_source_file, check_keyword_in_file, get_line, get_style_dict
+from makei.utils import (decompose_filename, is_source_file, check_keyword_in_file, get_line, get_style_dict,
+                         escape_special_chars)
 
 if TYPE_CHECKING:
     from makei.build import BuildEnv
@@ -49,7 +50,10 @@ class MKRule:
                         self.dependencies.remove(dependency)
                         return
             try:
-                self.source_file = self.dependencies[0].replace(r'\#', '#')
+                dep = self.dependencies[0]
+                # Use object types from TARGET_TARGETGROUPS_MAPPING to determine if dependency is an object
+                self.source_file = dep.replace(r'\#', 'HASHESCAPE_' if dep.upper().split('.')[-1] in
+                                               TARGET_TARGETGROUPS_MAPPING else '#')
                 self.dependencies.remove(self.dependencies[0])
             except IndexError:
                 print(f"No source file found for {self.target} in {self.dependencies}")
@@ -58,9 +62,14 @@ class MKRule:
             self.commands.append(f"@$(call echo_success_cmd,End of creating {self.target})")
 
     def __str__(self):
-        # ESCAPE the target name
-        escaped_target = self.target.replace(r'\#', '__H')
+        # ESCAPE targets that contain $ and #
+        escaped_target = escape_special_chars(self.target)
         variable_assignment = ''.join(f"{escaped_target}: {variable}\n" for variable in self.variables)
+        # ESCAPE dependencies that contain $ and #
+        escaped_deps = [
+            escape_special_chars(dep)
+            for dep in self.dependencies
+        ]
         if len(self.commands) > 0:
             return f"{escaped_target}_CUSTOM_RECIPE=true" + '\n' + f"{escaped_target} : " \
                                                                    f"{' '.join(self._parse_dependencies())}" + '\n' + \
@@ -78,9 +87,11 @@ class MKRule:
                 recipe_name = decompose_filename(self.source_file)[2].upper() + '_TO_' + self.target.split(".")[
                     -1].upper() + '_RECIPE'
             if '#' in self.source_file:
-                self.source_file = self.source_file.replace('#', '__H')
+                self.source_file = self.source_file.replace('#', 'HASHESCAPE_')
+            if '$' in self.source_file:
+                self.source_file = re.sub(r'\$(?!\(d\))', 'DOLLARESCAPE_', self.source_file)
             return f"{escaped_target}_SRC={self.source_file}" + '\n' + f"{escaped_target}_DEP" \
-                                                                       f"={' '.join(self.dependencies)}" + '\n' + \
+                                                                       f"={' '.join(escaped_deps)}" + '\n' + \
                 f"{escaped_target}_RECIPE={recipe_name}" + '\n' + variable_assignment
         except AttributeError:
             print(f"No source file found for {self.target}")
@@ -418,8 +429,8 @@ class RulesMk:
 
         for target_group, targets in self.targets.items():
             if len(targets) > 0:
-                # ESCAPE targets that contain $
-                escaped_targets = [t.replace(r'\#', '__H') for t in targets]
+                # ESCAPE targets that contain $ and #
+                escaped_targets = [escape_special_chars(t) for t in targets]
                 rules_str += f"{target_group} := {' '.join(escaped_targets)}\n"
         rules_str += "\n\n"
         rules_str += ''.join(map(str, map(rules_middleware, self.rules)))

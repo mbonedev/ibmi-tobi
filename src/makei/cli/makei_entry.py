@@ -10,7 +10,7 @@ from makei import __version__
 from makei import init_project
 from makei.build import BuildEnv
 from makei.cvtsrcpf import CvtSrcPf
-from makei.utils import Colors, colored, decompose_filename
+from makei.utils import Colors, colored, decompose_filename, escape_special_chars
 from pathlib import Path
 
 
@@ -239,7 +239,7 @@ def read_and_filter_rules_mk(source_names):
             target, deps = map(str.strip, line.split(":", 1))
             dep_list = [dep.upper().replace(r'\#', '#') for dep in deps.split()]
             if source_path.name.upper() in dep_list:
-                escaped_target = target.replace(r'\#', '__H')
+                escaped_target = escape_special_chars(target)
                 build_targets.append(escaped_target)
     if not build_targets:
         raise ValueError(f"No target found in Rules.mk for source file '{source_path.name}'")
@@ -268,7 +268,7 @@ def handle_compile(args):
             source_names.append(name)
             targets_from_rule = read_and_filter_rules_mk(source_names)
             targets.extend([t.upper() for t in targets_from_rule])
-    targets1 = ([t.upper().replace('__H', '#') for t in targets])
+    targets1 = ([t.upper().replace('HASHESCAPE_', '#').replace('DOLLARESCAPE_', '$') for t in targets])
     print(colored("targets: " + ', '.join(targets1), Colors.OKBLUE))
     build_env = BuildEnv(targets, args.make_options, get_override_vars(args), trace=args.log)
     if args.log:

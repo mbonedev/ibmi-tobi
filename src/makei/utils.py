@@ -27,6 +27,12 @@ class Colors(str, Enum):
     ENDC = '\033[0m'
 
 
+def escape_special_chars(text: str) -> str:
+    """Escape # and $ """
+    escaped = text.replace(r'\#', 'HASHESCAPE_').replace(r'$', 'DOLLARESCAPE_')
+    return escaped
+
+
 def colored(message: str, color: Colors) -> str:
     """Returns a colored message if supported
     """

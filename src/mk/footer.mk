@@ -4,10 +4,18 @@ SUBDIRS_$(d) := $(patsubst %/,%,$(addprefix $(d)/,$(SUBDIRS)))
 
 CLEAN_$(d) := $(CLEAN_$(d)) $(filter /%,$(CLEAN) $(TARGETS)) $(addprefix $(d)/,$(filter-out /%,$(CLEAN)))
 
+define escape_specials
+$(subst DOLLARESCAPE_,$$$$$$$,$(subst HASHESCAPE_,\#,$(1)))
+endef
+
+# Escape specials for source, but preserve HASHESCAPE_ for object dependencies (.MODULE, .SRVPGM, .PGM)
+define escape_source
+$(if $(filter %.MODULE %.SRVPGM %.PGM,$(1)),$(1),$(call escape_specials,$(1)))
+endef
+
 ifdef TARGETS
 TARGETS_$(d) := $(TARGETS)
-decode_dollar = $(subst __H,\#,$(1))
-$(foreach tgt,$(TARGETS),$(eval vpath $(tgt) $(OBJPATH_$(d)))$(eval $(tgt)_d = $(d))$(eval $(call generate_rule,$(tgt),$(call decode_dollar,$($(tgt)_SRC)),$(call decode_dollar,$($(tgt)_DEP)),$($(tgt)_RECIPE))))
+$(foreach tgt,$(TARGETS),$(eval vpath $(tgt) $(OBJPATH_$(d)))$(eval $(tgt)_d = $(d))$(eval $(call generate_rule,$(tgt),$(call escape_source,$($(tgt)_SRC)),$(call escape_specials,$($(tgt)_DEP)),$($(tgt)_RECIPE))))
 endif
 
 
