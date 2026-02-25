@@ -115,7 +115,7 @@ jobs:
               name: tobi-example,
               branch: integration-test,
               lib: lib1,
-              iasp: MYIASP,
+              iasp: GALAXY,
               directory: functionsVAT,
               file: vat300.rpgle,
               firstBuild: "0 failed 127 succeed 127 total",
@@ -127,7 +127,7 @@ jobs:
               name: ibmi-company_system,
               branch: main,
               lib: CURLIB,
-              iasp: MYIASP,
+              iasp: GALAXY,
               directory: qrpglesrc,
               file: MYPGM.PGM.RPGLE,
               firstBuild: "0 failed 15 succeed 15 total",
@@ -183,5 +183,5 @@ jobs:
         env:
           IBMI_HOST: ${{ secrets.IBMI_HOST }}
           IBMI_USER: ${{ secrets.IASP_USER }}
-          IBMI_PASSWORD: ${{ secrets.IBMI_PASSWORD_SECOND }}
+          IBMI_PASSWORD: ${{ secrets.IBMI_PASSWORD }}
           IBMI_SSH_PORT: ${{ secrets.IBMI_SSH_PORT }}
