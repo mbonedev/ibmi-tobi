@@ -164,6 +164,7 @@ jobs:
             --cmd "git switch ${{ matrix.project.branch }}" \
             --cmd "node -e \"const fs=require('fs'); const j=JSON.parse(fs.readFileSync('iproj.json','utf8')); j.iasp='${{ matrix.project.iasp }}'; j.setIBMiEnvCmd=['SETASPGRP ASPGRP(${{ matrix.project.iasp }})']; fs.writeFileSync('iproj.json',JSON.stringify(j,null,2));\"" \
             --cmd "echo Full build under IASP..." \
+            --cmd "cl 'SETASPGRP ASPGRP(${{ matrix.project.iasp }})'" \
             --cmd "../ibmi_tobi_iasp/bin/makei b -e ${{ matrix.project.lib }}=$(so -bl ${GITHUB_HEAD_REF}_${{ matrix.project.name }}_IASP) | tee firstBuild.log" \
             --cmd "grep '${{ matrix.project.firstBuild }}' firstBuild.log || { echo 'First build of ${{ matrix.project.firstBuild }} failed!'; exit 1; }" \
             --cmd "echo Touch one file and full build..." \
