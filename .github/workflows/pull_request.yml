@@ -157,7 +157,7 @@ jobs:
             --cmd "cl 'SETASPGRP ASPGRP(${{ matrix.project.iasp }})'" \
             --cmd "echo Setting up ${{ matrix.project.name }} under IASP ${{ matrix.project.iasp }}..." \
             --ignore --cl "CRTLIB LIB($(so -bl ${GITHUB_HEAD_REF}_${{ matrix.project.name }}_IASP)) ASPDEV(${{ matrix.project.iasp }})" \
-            --ignore --cl "CLRLIB $(so -bl ${GITHUB_HEAD_REF}_${{ matrix.project.name }})" \
+            --ignore --cmd "cl 'SETASPGRP ASPGRP(${{ matrix.project.iasp }})' && cl CLRLIB $(so -bl ${GITHUB_HEAD_REF}_${{ matrix.project.name }}_IASP)" \
             --cmd "rm -rf ../${{ matrix.project.name }}_iasp" \
             --cmd "git clone https://github.com/IBM/${{ matrix.project.name }}.git ../${{ matrix.project.name }}_iasp" \
             --rcwd "../${{ matrix.project.name }}_iasp" \
