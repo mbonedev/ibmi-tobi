@@ -53,7 +53,7 @@ class CrtFrmStmf():
     def __init__(self, srcstmf: str, obj: str, lib: str, cmd: str, rcdlen: int, tgt_ccsid: Optional[str] = None,
                  parameters: Optional[str] = None, env_settings: Optional[Dict[str, str]] = None,
                  joblog_path: Optional[str] = None, tmp_lib=None, tmp_src="QSOURCE", precmd="",
-                 postcmd="", output="", iasp: str = "") -> None:
+                 postcmd="", output="", iasp: str = "", dependencies: Optional[List[str]] = None) -> None:
         # pylint: disable=too-many-arguments
         self.job = IBMJob()
         self.setup_job = IBMJob()
@@ -73,6 +73,7 @@ class CrtFrmStmf():
         self.output = output
         self.iasp = iasp if iasp else ""
         self.iasp_prefix = get_iasp_prefix(self.iasp)
+        self.dependencies = dependencies if dependencies else []
         self.tmp_lib = resolve_tmp_lib(self.lib, self.iasp)
         if tgt_ccsid is None or not validate_ccsid(tgt_ccsid):
             ccsid = retrieve_ccsid(srcstmf)
@@ -117,6 +118,9 @@ class CrtFrmStmf():
             f'CPYFRMSTMF FROMSTMF("{self.srcstmf}") '
             f'TOMBR("{self.iasp_prefix}/QSYS.LIB/{self.tmp_lib}.LIB/{self.tmp_src}.FILE/{self.obj}.MBR") '
             f'MBROPT(*REPLACE)')
+
+        if self.dependencies:
+            self._copy_dependencies_to_srcpf()
 
         self._backup_and_delete_objs()
 
@@ -247,6 +251,24 @@ class CrtFrmStmf():
                 f" SAVF({self.tmp_lib}/{lib})")
         print("done.")
 
+    def _copy_dependencies_to_srcpf(self):
+        self.job.run_cl(f'DLTF FILE({self.tmp_lib}/QRPGSRC)', True)
+
+        self.job.run_cl(f'CRTSRCPF FILE({self.tmp_lib}/QRPGSRC) RCDLEN({self.rcdlen}) CCSID({self.ccsid_c})')
+
+        base_path = Path(self.srcstmf).parent
+        for dep_file in self.dependencies:
+            dep_path = (base_path / dep_file).resolve()
+            if not dep_path.exists():
+                print(f"Warning: Dependency file {dep_file} not found")
+                continue
+
+            member_name = dep_path.stem.upper()[:10]
+            self.job.run_cl(
+                f'CPYFRMSTMF FROMSTMF("{dep_path}") '
+                f'TOMBR("{self.iasp_prefix}/QSYS.LIB/{self.tmp_lib}.LIB/QRPGSRC.FILE/{member_name}.MBR") '
+                f'MBROPT(*REPLACE)')
+
 
 def cli():
     """
@@ -328,6 +350,12 @@ def cli():
         "--output",
         metavar='<output>',
     )
+    parser.add_argument(
+        "-d",
+        "--dependencies",
+        help='Comma-separated list of dependency files to copy to source file',
+        metavar='<dependencies>',
+    )
 
     args = parser.parse_args()
     srcstmf_absolute_path = str(Path(args.stream_file.strip()).resolve())
@@ -343,10 +371,12 @@ def cli():
     if "iasp" in os.environ:
         env_settings["iasp"] = os.environ["iasp"]
 
+    dependencies = args.dependencies.split(',') if args.dependencies else []
+
     handle = CrtFrmStmf(srcstmf_absolute_path, args.object.strip(),
                         args.library.strip(), args.command.strip(), args.rcdlen, args.ccsid,
                         args.parameters, env_settings, args.save_joblog, precmd=args.precmd,
-                        postcmd=args.postcmd, output=args.output, iasp=env_settings["iasp"])
+                        postcmd=args.postcmd, output=args.output, iasp=env_settings["iasp"], dependencies=dependencies)
     print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
     success = handle.run()
     print("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
