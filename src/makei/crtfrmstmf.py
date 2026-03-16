@@ -257,8 +257,11 @@ class CrtFrmStmf():
         self.job.run_cl(f'CRTSRCPF FILE({self.tmp_lib}/QRPGSRC) RCDLEN({self.rcdlen}) CCSID({self.ccsid_c})')
 
         base_path = Path(self.srcstmf).parent
+        project_root = Path(self.joblog_path).parent.parent if self.joblog_path else None
         for dep_file in self.dependencies:
             dep_path = (base_path / dep_file).resolve()
+            if not dep_path.exists() and project_root and Path(dep_file).parent != Path('.'):
+                dep_path = (project_root / dep_file).resolve()            
             if not dep_path.exists():
                 print(f"Warning: Dependency file {dep_file} not found")
                 continue
