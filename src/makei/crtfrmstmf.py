@@ -261,7 +261,7 @@ class CrtFrmStmf():
         for dep_file in self.dependencies:
             dep_path = (base_path / dep_file).resolve()
             if not dep_path.exists() and project_root and Path(dep_file).parent != Path('.'):
-                dep_path = (project_root / dep_file).resolve()            
+                dep_path = (project_root / dep_file).resolve()
             if not dep_path.exists():
                 print(f"Warning: Dependency file {dep_file} not found")
                 continue
