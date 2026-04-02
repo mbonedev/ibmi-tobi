@@ -294,7 +294,7 @@ def cli():
         '--rcdlen',
         help='Specifies the record length for the temporary source physical file.',
         metavar='<rcdlen>',
-        default=32000
+        default=240
 
     )
 
