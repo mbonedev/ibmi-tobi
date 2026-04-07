@@ -37,12 +37,9 @@ EXTENSION_TO_SRCFILE_MAP = {
     'rpgleinc': 'QRPGLESRC',
     'cbl': 'QLBLSRC',
     'cblle': 'QLBLSRC',
-    'sqlcblle': 'QCBLSRC',
+    'sqlcblle': 'QLBLSRC',
     'cblinc': 'QLBLSRC',
-    'cl': 'QCLSRC',
-    'clinc': 'QCLSRC',
-    'clle': 'QCLSRC',
-    'clleinc': 'QCLSRC'
+    'cblleinc': 'QLBLSRC'
 
 }
 
