@@ -145,9 +145,6 @@ endif
 ifndef DFTACTGRP
 DFTACTGRP := *NO
 endif
-ifndef DFTRDBCOL
-DFTRDBCOL := *NONE
-endif
 ifndef DLTPCT
 DLTPCT := *NONE
 endif
@@ -501,7 +498,7 @@ CRTBNDCBLFLAGS = TGTCCSID($(TGTCCSID)) DBGVIEW($(DBGVIEW)) DBGENCKEY($(DBGENCKEY
 CRTBNDCFLAGS = TGTCCSID($(TGTCCSID)) DBGVIEW($(DBGVIEW)) DBGENCKEY($(DBGENCKEY)) USRPRF($(USRPRF)) OPTION($(OPTION)) TEXT('$(subst ','',$(TEXT))') TGTRLS($(TGTRLS)) INCDIR($(INCDIR))
 CRTBNDCLFLAGS = AUT($(AUT)) DBGVIEW($(DBGVIEW)) DBGENCKEY($(DBGENCKEY)) USRPRF($(USRPRF)) OPTION($(OPTION)) TEXT('$(subst ','',$(TEXT))') TGTRLS($(TGTRLS)) INCDIR($(INCDIR))
 CRTCLPGMFLAGS = OPTION($(OPTION)) TEXT('$(subst ','',$(TEXT))') TGTRLS($(TGTRLS)) USRPRF($(USRPRF))
-RUNSQLFLAGS = DBGVIEW(*SOURCE) TGTRLS($(TGTRLS)) OUTPUT(*PRINT) MARGINS(1024) COMMIT($(COMMIT)) DFTRDBCOL($(DFTRDBCOL))
+RUNSQLFLAGS = DBGVIEW(*SOURCE) TGTRLS($(TGTRLS)) OUTPUT(*PRINT) MARGINS(1024) COMMIT($(COMMIT))
 
 # Extra command string for adhoc addition of extra parameters to a creation command.
 ADHOCCRTFLAGS =
@@ -1204,7 +1201,7 @@ define TABLE_TO_FILE_RECIPE =
 	$(eval d = $($@_d))
 	@$(call echo_cmd,"=== Creating SQL TABLE $(call ESCAPE_FOR_RECIPE,$(OBJLIB))/$(basename $(notdir $@)) from Sql statement [$(notdir $<)]")
 	$(eval tempFile := $(shell mktemp))
-	$(eval crtcmd := RUNSQLSTM srcstmf('$(tempFile)') $(RUNSQLFLAGS))
+	$(eval crtcmd := RUNSQLSTM srcstmf('$(tempFile)') dftrdbcol($(call ESCAPE_FOR_RECIPE,$(OBJLIB))) $(RUNSQLFLAGS))
 	$(eval mbrtextcmd := $(if $(TEXT),CHGOBJD OBJ($(call ESCAPE_FOR_RECIPE,$(OBJLIB))/$(basename $(notdir $@))) OBJTYPE(*FILE) TEXT('$(subst ','',$(TEXT))')))
 	@$(PRESETUP) \
 	$(SETCURLIBTOOBJLIB) \
@@ -1218,7 +1215,7 @@ define PFSQL_TO_FILE_RECIPE =
 	$(eval d = $($@_d))
 	@$(call echo_cmd,"=== Creating SQL PFSQL $(call ESCAPE_FOR_RECIPE,$(OBJLIB))/$(basename $(notdir $@)) from Sql statement [$(notdir $<)]")
 	$(eval tempFile := $(shell mktemp))
-	$(eval crtcmd := RUNSQLSTM srcstmf('$(tempFile)') $(RUNSQLFLAGS))
+	$(eval crtcmd := RUNSQLSTM srcstmf('$(tempFile)') dftrdbcol($(call ESCAPE_FOR_RECIPE,$(OBJLIB))) $(RUNSQLFLAGS))
 	$(eval mbrtextcmd := $(if $(TEXT),CHGOBJD OBJ($(call ESCAPE_FOR_RECIPE,$(OBJLIB))/$(basename $(notdir $@))) OBJTYPE(*FILE) TEXT('$(subst ','',$(TEXT))')))
 	@$(PRESETUP) \
 	$(SETCURLIBTOOBJLIB) \
@@ -1232,7 +1229,7 @@ define VIEW_TO_FILE_RECIPE =
 	$(eval d = $($@_d))
 	@$(call echo_cmd,"=== Creating SQL VIEW $(call ESCAPE_FOR_RECIPE,$(OBJLIB))/$(basename $(notdir $@)) from Sql statement [$(notdir $<)]")
 	$(eval tempFile := $(shell mktemp))
-	$(eval crtcmd := RUNSQLSTM srcstmf('$(tempFile)') $(RUNSQLFLAGS))
+	$(eval crtcmd := RUNSQLSTM srcstmf('$(tempFile)') dftrdbcol($(call ESCAPE_FOR_RECIPE,$(OBJLIB))) $(RUNSQLFLAGS))
 	$(eval mbrtextcmd := $(if $(TEXT),CHGOBJD OBJ($(call ESCAPE_FOR_RECIPE,$(OBJLIB))/$(basename $(notdir $@))) OBJTYPE(*FILE) TEXT('$(subst ','',$(TEXT))')))
 	@$(PRESETUP) \
 	$(SETCURLIBTOOBJLIB) \
@@ -1244,7 +1241,7 @@ define INDEX_TO_FILE_RECIPE =
 	$(eval d = $($@_d))
 	@$(call echo_cmd,"=== Creating SQL INDEX $(call ESCAPE_FOR_RECIPE,$(OBJLIB))/$(basename $(notdir $@)) from Sql statement [$(notdir $<)]")
 	$(eval tempFile := $(shell mktemp))
-	$(eval crtcmd := RUNSQLSTM srcstmf('$(tempFile)') $(RUNSQLFLAGS))
+	$(eval crtcmd := RUNSQLSTM srcstmf('$(tempFile)') dftrdbcol($(call ESCAPE_FOR_RECIPE,$(OBJLIB))) $(RUNSQLFLAGS))
 	$(eval mbrtextcmd := $(if $(TEXT),CHGOBJD OBJ($(call ESCAPE_FOR_RECIPE,$(OBJLIB))/$(basename $(notdir $@))) OBJTYPE(*FILE) TEXT('$(subst ','',$(TEXT))')))
 	@$(PRESETUP) \
 	$(SETCURLIBTOOBJLIB) \
@@ -1256,7 +1253,7 @@ define SQLUDT_TO_FILE_RECIPE =
 	$(eval d = $($@_d))
 	@$(call echo_cmd,"=== Creating SQL UDT $(call ESCAPE_FOR_RECIPE,$(OBJLIB))/$(basename $(notdir $@)) from Sql statement [$(notdir $<)]")
 	$(eval tempFile := $(shell mktemp))
-	$(eval crtcmd := RUNSQLSTM srcstmf('$(tempFile)') $(RUNSQLFLAGS))
+	$(eval crtcmd := RUNSQLSTM srcstmf('$(tempFile)') dftrdbcol($(call ESCAPE_FOR_RECIPE,$(OBJLIB))) $(RUNSQLFLAGS))
 	$(eval mbrtextcmd := $(if $(TEXT),CHGOBJD OBJ($(call ESCAPE_FOR_RECIPE,$(OBJLIB))/$(basename $(notdir $@))) OBJTYPE(*FILE) TEXT('$(subst ','',$(TEXT))')))
 	@$(PRESETUP) \
 	$(SETCURLIBTOOBJLIB) \
@@ -1268,7 +1265,7 @@ define SQLALIAS_TO_FILE_RECIPE =
 	$(eval d = $($@_d))
 	@$(call echo_cmd,"=== Creating SQL ALIAS $(call ESCAPE_FOR_RECIPE,$(OBJLIB))/$(basename $(notdir $@)) from Sql statement [$(notdir $<)]")
 	$(eval tempFile := $(shell mktemp))
-	$(eval crtcmd := RUNSQLSTM srcstmf('$(tempFile)') $(RUNSQLFLAGS))
+	$(eval crtcmd := RUNSQLSTM srcstmf('$(tempFile)') dftrdbcol($(call ESCAPE_FOR_RECIPE,$(OBJLIB))) $(RUNSQLFLAGS))
 	$(eval mbrtextcmd := $(if $(TEXT),CHGOBJD OBJ($(call ESCAPE_FOR_RECIPE,$(OBJLIB))/$(basename $(notdir $@))) OBJTYPE(*FILE) TEXT('$(subst ','',$(TEXT))')))
 	@$(PRESETUP) \
 	$(SETCURLIBTOOBJLIB) \
@@ -1292,7 +1289,7 @@ define SQLSEQ_TO_DTAARA_RECIPE =
 	$(eval d = $($@_d))
 	@$(call echo_cmd,"=== Creating SQL SEQUENCE $(call ESCAPE_FOR_RECIPE,$(OBJLIB))/$(basename $(notdir $@)) from Sql statement [$(notdir $<)]")
 	$(eval tempFile := $(shell mktemp))
-	$(eval crtcmd := RUNSQLSTM srcstmf('$(tempFile)') $(RUNSQLFLAGS))
+	$(eval crtcmd := RUNSQLSTM srcstmf('$(tempFile)') dftrdbcol($(call ESCAPE_FOR_RECIPE,$(OBJLIB))) $(RUNSQLFLAGS))
 	$(eval mbrtextcmd := $(if $(TEXT),CHGOBJD OBJ($(call ESCAPE_FOR_RECIPE,$(OBJLIB))/$(basename $(notdir $@))) OBJTYPE(*DTAARA) TEXT('$(subst ','',$(TEXT))')))
 	@$(PRESETUP) \
 	$(SETCURLIBTOOBJLIB) \
@@ -1463,7 +1460,7 @@ define SQLPRC_TO_PGM_RECIPE =
 	$(PGM_VARIABLES)
 	@$(call echo_cmd,"=== Creating SQL PROCEDURE $(call ESCAPE_FOR_RECIPE,$(OBJLIB))/$(basename $(notdir $@)) from Sql statement [$(notdir $<)]")
 	$(eval tempFile := $(shell mktemp))
-	$(eval crtcmd := RUNSQLSTM srcstmf('$(tempFile)') $(RUNSQLFLAGS))
+	$(eval crtcmd := RUNSQLSTM srcstmf('$(tempFile)') dftrdbcol($(call ESCAPE_FOR_RECIPE,$(OBJLIB))) $(RUNSQLFLAGS))
 	$(eval mbrtextcmd := $(if $(TEXT),CHGOBJD OBJ($(call ESCAPE_FOR_RECIPE,$(OBJLIB))/$(basename $(notdir $@))) OBJTYPE(*PGM) TEXT('$(subst ','',$(TEXT))')))
 	@$(PRESETUP) \
 	$(SETCURLIBTOOBJLIB) \
@@ -1474,7 +1471,7 @@ define SQLTRG_TO_PGM_RECIPE =
 	$(PGM_VARIABLES)
 	@$(call echo_cmd,"=== Creating SQL TRIGGER $(call ESCAPE_FOR_RECIPE,$(OBJLIB))/$(basename $(notdir $@)) from Sql statement [$(notdir $<)]")
 	$(eval tempFile := $(shell mktemp))
-	$(eval crtcmd := RUNSQLSTM srcstmf('$(tempFile)') $(RUNSQLFLAGS))
+	$(eval crtcmd := RUNSQLSTM srcstmf('$(tempFile)') dftrdbcol($(call ESCAPE_FOR_RECIPE,$(OBJLIB))) $(RUNSQLFLAGS))
 	$(eval mbrtextcmd :=  $(if $(TEXT),CHGOBJD OBJ($(call ESCAPE_FOR_RECIPE,$(OBJLIB))/$(basename $(notdir $@))) OBJTYPE(*PGM) TEXT('$(subst ','',$(TEXT))')))
 	@$(PRESETUP) \
 	$(SETCURLIBTOOBJLIB) \
@@ -1630,7 +1627,7 @@ define SQLUDF_TO_SRVPGM_RECIPE =
 	$(eval d = $($@_d))
 	@$(call echo_cmd,"=== Creating SQL UDF $(call ESCAPE_FOR_RECIPE,$(OBJLIB))/$(basename $(notdir $@)) from Sql statement [$(notdir $<)]")
 	$(eval tempFile := $(shell mktemp))
-	$(eval crtcmd := RUNSQLSTM srcstmf('$(tempFile)') $(RUNSQLFLAGS))
+	$(eval crtcmd := RUNSQLSTM srcstmf('$(tempFile)') dftrdbcol($(call ESCAPE_FOR_RECIPE,$(OBJLIB))) $(RUNSQLFLAGS))
 	$(eval mbrtextcmd := $(if $(TEXT),CHGOBJD OBJ($(call ESCAPE_FOR_RECIPE,$(OBJLIB))/$(basename $(notdir $@))) OBJTYPE(*SRVPGM) TEXT('$(subst ','',$(TEXT))')))
 	@$(PRESETUP) \
 	$(SETCURLIBTOOBJLIB) \
@@ -1660,7 +1657,7 @@ define SQLVAR_TO_SRVPGM_RECIPE =
     $(SRVPGM_VARIABLES)
     $(eval d = $($@_d))
     @$(call echo_cmd,"=== Creating SQL Global Variable [$(notdir $<)]")
-    $(eval crtcmd := RUNSQLSTM srcstmf('$<') $(RUNSQLFLAGS))
+    $(eval crtcmd := RUNSQLSTM srcstmf('$<') dftrdbcol($(call ESCAPE_FOR_RECIPE,$(OBJLIB))) $(RUNSQLFLAGS))
     @$(PRESETUP) \
 	$(SCRIPTSPATH)/launch "$(JOBLOGFILE)" "$(crtcmd)" "$(PRECMD)" "$(POSTCMD)" "$(notdir $@)" "$<" "$(logFile)" "" "$(mbrtextcmd)"> $(logFile) 2>&1 && $(call logSuccess,$@) || $(call logFail,$@)
 endef
