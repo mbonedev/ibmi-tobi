@@ -989,11 +989,13 @@ programUSRPRF = $(strip \
 	$(if $(filter %.module,$<),$(PGM_USRPRF), \
 	$(if $(filter %.RPG,$<),$(PGM_USRPRF), \
 	$(if $(filter %.rpg,$<),$(PGM_USRPRF), \
+	$(if $(filter %.CBL,$<),$(PGM_USRPRF), \
+	$(if $(filter %.cbl,$<),$(PGM_USRPRF), \
 	$(if $(filter %.SQLRPG,$<),$(SQLRPG_USRPRF), \
 	$(if $(filter %.sqlrpg,$<),$(SQLRPG_USRPRF), \
 	$(if $(filter %.CLP,$<),$(CL_USRPRF), \
 	$(if $(filter %.clp,$<),$(CL_USRPRF), \
-	UNKNOWN_FILE_TYPE)))))))))))))))))))))))
+	UNKNOWN_FILE_TYPE)))))))))))))))))))))))))
 programDETAIL = $(strip \
 	$(if $(filter %.MODULE,$<),$(PGM_DETAIL), \
 	$(if $(filter %.module,$<),$(PGM_DETAIL), \
@@ -1521,9 +1523,10 @@ endef
 define CBL_TO_PGM_RECIPE =
 	$(PGM_VARIABLES)
 	@$(call echo_cmd,"=== Creating COBOL Program [$(basename $@)] in $(call ESCAPE_FOR_RECIPE,$(OBJLIB))")
-	$(eval crtcmd := $(SCRIPTSPATH)/crtfrmstmf --ccsid $(TGTCCSID) -f $< -o $(basename $(@F)) -l $(call ESCAPE_FOR_RECIPE,$(OBJLIB)) -c "CRTCBLPGM" -p $(CRTCBLPGMFLAGS))
+	$(eval dep_list := $(subst $(space),$(comma),$(filter-out $< $(OBJECT_TARGET_PATTERNS),$^)))
+	$(eval crtcmd := $(SCRIPTSPATH)/crtfrmstmf --ccsid $(TGTCCSID) -f $< -o $(basename $(@F)) -l $(call ESCAPE_FOR_RECIPE,$(OBJLIB)) -c "CRTCBLPGM" -p $(CRTCBLPGMFLAGS) $(if $(dep_list),-d "$(dep_list)"))
 	@$(PRESETUP) \
-	$(SCRIPTSPATH)/crtfrmstmf --ccsid $(TGTCCSID)  -f $< -o $(basename $(@F)) -l $(call ESCAPE_FOR_RECIPE,$(OBJLIB)) -c "CRTCBLPGM" -p "$(CRTCBLPGMFLAGS)" --save-joblog "$(JOBLOGFILE)" --precmd="$(PRECMD)" --postcmd="$(POSTCMD)" --output="$(logFile)" > $(logFile) 2>&1 && $(call logSuccess,$@) || $(call logFail,$@)
+	$(SCRIPTSPATH)/crtfrmstmf --ccsid $(TGTCCSID)  -f $< -o $(basename $(@F)) -l $(call ESCAPE_FOR_RECIPE,$(OBJLIB)) -c "CRTCBLPGM" -p "$(CRTCBLPGMFLAGS)" -d "$(dep_list)" --save-joblog "$(JOBLOGFILE)" --precmd="$(PRECMD)" --postcmd="$(POSTCMD)" --output="$(logFile)" > $(logFile) 2>&1 && $(call logSuccess,$@) || $(call logFail,$@)
 	@$(call EVFEVENT_DOWNLOAD,$(basename $(@F)).evfevent)
 endef
 
@@ -1566,7 +1569,7 @@ endef
 define RPG_TO_PGM_RECIPE =
 	$(PGM_VARIABLES)
 	@$(call echo_cmd,"=== Creating RPG Program [$(basename $@)]")
-	$(eval dep_list := $(subst $(space),$(comma),$(filter-out $<,$(filter %.rpginc %.inc %.RPGINC %.INC %.rpg %.RPG,$^))))
+	$(eval dep_list := $(subst $(space),$(comma),$(filter-out $< $(OBJECT_TARGET_PATTERNS),$^)))
 	$(eval crtcmd := $(SCRIPTSPATH)/crtfrmstmf --ccsid $(TGTCCSID) -f $< -o $(basename $(@F)) -l $(call ESCAPE_FOR_RECIPE,$(OBJLIB)) -c "CRTRPGPGM" -p $(CRTRPGPGMFLAGS) $(if $(dep_list),-d "$(dep_list)"))
 	@$(PRESETUP) \
 	$(SCRIPTSPATH)/crtfrmstmf --ccsid $(TGTCCSID)  -f $< -o $(basename $(@F)) -l $(call ESCAPE_FOR_RECIPE,$(OBJLIB)) -c "CRTRPGPGM" -p "$(CRTRPGPGMFLAGS)" -d "$(dep_list)" --save-joblog "$(JOBLOGFILE)" --precmd="$(PRECMD)" --postcmd="$(POSTCMD)" --output="$(logFile)" > $(logFile) 2>&1 && $(call logSuccess,$@) || $(call logFail,$@)
@@ -1576,10 +1579,10 @@ endef
 define SQLRPG_TO_PGM_RECIPE =
 	$(PGM_VARIABLES)
 	@$(call echo_cmd,"=== Creating SQLRPG Program [$(basename $@)]")
-	$(eval dep_list := $(subst $(space),$(comma),$(filter-out $<,$(filter %.rpginc %.inc %.RPGINC %.INC %.rpg %.RPG,$^))))
+	$(eval dep_list := $(subst $(space),$(comma),$(filter-out $< $(OBJECT_TARGET_PATTERNS),$^)))
 	$(eval crtcmd := $(SCRIPTSPATH)/crtfrmstmf --ccsid $(TGTCCSID) -f $< -o $(basename $(@F)) -l $(call ESCAPE_FOR_RECIPE,$(OBJLIB)) -c "CRTSQLRPG" -p $(CRTSQLRPGFLAGS) $(if $(dep_list),-d "$(dep_list)"))
 	@$(PRESETUP) \
-	$(SCRIPTSPATH)/crtfrmstmf --ccsid $(TGTCCSID)  -f $< -o $(basename $(@F)) -l $(call ESCAPE_FOR_RECIPE,$(OBJLIB)) -c "CRTSQLRPG" -p "$(CRTSQLRPGFLAGS)" -d "$(dep_list)" --save-joblog "$(JOBLOGFILE)" --precmd="$(PRECMD)" --postcmd="$(POSTCMD)" --output="$(logFile)" > $(logFile) 2>&1 && $(call logSuccess,$@) || $(call logFail,$@)	
+	$(SCRIPTSPATH)/crtfrmstmf --ccsid $(TGTCCSID)  -f $< -o $(basename $(@F)) -l $(call ESCAPE_FOR_RECIPE,$(OBJLIB)) -c "CRTSQLRPG" -p "$(CRTSQLRPGFLAGS)" -d "$(dep_list)" --save-joblog "$(JOBLOGFILE)" --precmd="$(PRECMD)" --postcmd="$(POSTCMD)" --output="$(logFile)" > $(logFile) 2>&1 && $(call logSuccess,$@) || $(call logFail,$@)
 	$(if $(filter *NOSRC,$(SQLRPG_OPTION)),,@$(call EVFEVENT_DOWNLOAD,$(basename $(@F)).evfevent))
 endef
 

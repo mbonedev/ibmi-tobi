@@ -1321,3 +1321,59 @@ MAINPGM22.PGM_DEP=COPY01.RPG
 MAINPGM22.PGM_RECIPE=SQLRPG_TO_PGM_RECIPE
 """
     )
+
+
+def test_cbl_recipe():
+    # Test loading from a valid file
+    rules_mk = RulesMk.from_file(data_dir / "cbl.rules.mk", data_dir)
+    expected_targets = {
+        "TRGs": [],
+        "DTAARAs": [],
+        "DTAQs": [],
+        "SQLs": [],
+        "BNDDs": [],
+        "PFs": [],
+        "LFs": [],
+        "DSPFs": [],
+        "PRTFs": [],
+        "CMDs": [],
+        "MODULEs": [],
+        "SRVPGMs": [],
+        "PGMs": ["SIMPLE.PGM"],
+        "MENUs": [],
+        "PNLGRPs": [],
+        "QMQRYs": [],
+        "WSCSTs": [],
+        "MSGs": [],
+    }
+    assert rules_mk.src_obj_mapping["SIMPLE.CBL"] == ["SIMPLE.PGM"]
+    assert rules_mk.containing_dir == data_dir
+    assert rules_mk.subdirs == []
+    assert rules_mk.targets == expected_targets
+
+    # Test MAINPGM.PGM rule
+    assert rules_mk.rules[0].variables == []
+    assert rules_mk.rules[0].commands == []
+    assert rules_mk.rules[0].dependencies == ["DATACPY.CBL"]
+    assert rules_mk.rules[0].include_dirs == []
+    assert rules_mk.rules[0].target == "SIMPLE.PGM"
+    assert rules_mk.rules[0].source_file == "SIMPLE.CBL"
+    assert (
+        str(rules_mk.rules[0])
+        == """SIMPLE.PGM_SRC=SIMPLE.CBL
+SIMPLE.PGM_DEP=DATACPY.CBL
+SIMPLE.PGM_RECIPE=CBL_TO_PGM_RECIPE
+"""
+    )
+
+    # Test full RulesMk string output
+    assert (
+        str(rules_mk)
+        == """PGMs := SIMPLE.PGM
+
+
+SIMPLE.PGM_SRC=SIMPLE.CBL
+SIMPLE.PGM_DEP=DATACPY.CBL
+SIMPLE.PGM_RECIPE=CBL_TO_PGM_RECIPE
+"""
+    )

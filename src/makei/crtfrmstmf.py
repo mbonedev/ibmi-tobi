@@ -27,6 +27,25 @@ COMMAND_MAP = {'CRTCMD': 'CMD',
                'CRTRPGPGM': 'PGM',
                'CRTSQLRPG': 'PGM'}
 
+# Mapping of file extensions to their source physical files
+EXTENSION_TO_SRCFILE_MAP = {
+    'rpg': 'QRPGSRC',
+    'sqlrpg': 'QRPGSRC',
+    'rpginc': 'QRPGSRC',
+    'rpgle': 'QRPGLESRC',
+    'sqlrpgle': 'QRPGLESRC',
+    'rpgleinc': 'QRPGLESRC',
+    'cbl': 'QLBLSRC',
+    'cblle': 'QLBLSRC',
+    'sqlcblle': 'QCBLSRC',
+    'cblinc': 'QLBLSRC',
+    'cl': 'QCLSRC',
+    'clinc': 'QCLSRC',
+    'clle': 'QCLSRC',
+    'clleinc': 'QCLSRC'
+
+}
+
 
 class CrtFrmStmf():
     """create from stream file
@@ -108,19 +127,8 @@ class CrtFrmStmf():
         if self.precmd:
             self.job.run_cl(self.precmd, False, True)
 
-        # Delete the temp source file
-        self.job.run_cl(f'DLTF FILE({self.tmp_lib}/{self.tmp_src})', True)
-        # Create the temp source file
-        self.job.run_cl(
-            f'CRTSRCPF FILE({self.tmp_lib}/{self.tmp_src}) RCDLEN({self.rcdlen}) MBR({self.obj}) CCSID({self.ccsid_c})')
-        # Copy the source stream file to the temp source file
-        self.job.run_cl(
-            f'CPYFRMSTMF FROMSTMF("{self.srcstmf}") '
-            f'TOMBR("{self.iasp_prefix}/QSYS.LIB/{self.tmp_lib}.LIB/{self.tmp_src}.FILE/{self.obj}.MBR") '
-            f'MBROPT(*REPLACE)')
-
-        if self.dependencies:
-            self._copy_dependencies_to_srcpf()
+        # Setup source files and copy all files (source + dependencies)
+        self._setup_and_copy_source_files()
 
         self._backup_and_delete_objs()
 
@@ -251,22 +259,61 @@ class CrtFrmStmf():
                 f" SAVF({self.tmp_lib}/{lib})")
         print("done.")
 
-    def _copy_dependencies_to_srcpf(self):
-        self.job.run_cl(f'DLTF FILE({self.tmp_lib}/QRPGSRC)', True)
+    def _get_srcfile_for_extension(self, file_path: str) -> Optional[str]:
+        """Determine the source file based on file extension"""
+        path = Path(file_path)
+        extension = path.suffix.lstrip('.').lower()
+        return EXTENSION_TO_SRCFILE_MAP.get(extension)
 
-        self.job.run_cl(f'CRTSRCPF FILE({self.tmp_lib}/QRPGSRC) RCDLEN({self.rcdlen}) CCSID({self.ccsid_c})')
+    def _setup_and_copy_source_files(self):
+        """Setup source physical files and copy all files (main source + dependencies) efficiently"""
+        files_to_copy = []
+        files_to_copy.append((self.srcstmf, self.tmp_src, self.obj))
+        # Add dependency files if they exist
+        if self.dependencies:
+            base_path = Path(self.srcstmf).parent
+            project_root = Path(self.joblog_path).parent.parent if self.joblog_path else None
 
-        base_path = Path(self.srcstmf).parent
-        project_root = Path(self.joblog_path).parent.parent if self.joblog_path else None
-        for dep_file in self.dependencies:
-            dep_path = (base_path / dep_file).resolve()
-            if not dep_path.exists():
-                dep_path = (project_root / dep_file).resolve()
-            member_name = dep_path.stem.upper()
-            self.job.run_cl(
-                f'CPYFRMSTMF FROMSTMF("{dep_path}") '
-                f'TOMBR("{self.iasp_prefix}/QSYS.LIB/{self.tmp_lib}.LIB/QRPGSRC.FILE/{member_name}.MBR") '
-                f'MBROPT(*REPLACE)')
+            for dep_file in self.dependencies:
+                dep_path = (base_path / dep_file).resolve()
+                if not dep_path.exists() and project_root:
+                    dep_path = (project_root / dep_file).resolve()
+
+                # Determine source file based on file extension
+                dep_srcfile = self._get_srcfile_for_extension(str(dep_path))
+
+                if not dep_srcfile:
+                    print(f"Warning: No source file mapping for extension of {dep_path}")
+                    continue
+
+                member_name = dep_path.stem.upper()
+                files_to_copy.append((str(dep_path), dep_srcfile, member_name))
+
+        # Group files by source file to minimize operations
+        srcfiles_dict = {}
+        for file_path, srcfile, member_name in files_to_copy:
+            if srcfile not in srcfiles_dict:
+                srcfiles_dict[srcfile] = []
+            srcfiles_dict[srcfile].append((file_path, member_name))
+
+        # Process each source file: delete, create, and copy all members
+        for srcfile, file_list in srcfiles_dict.items():
+            self.job.run_cl(f'DLTF FILE({self.tmp_lib}/{srcfile})', True)
+
+            if srcfile == self.tmp_src:
+                self.job.run_cl(
+                    f'CRTSRCPF FILE({self.tmp_lib}/{srcfile}) RCDLEN({self.rcdlen}) MBR({self.obj}) '
+                    f'CCSID({self.ccsid_c})')
+
+            else:
+                self.job.run_cl(
+                    f'CRTSRCPF FILE({self.tmp_lib}/{srcfile}) RCDLEN({self.rcdlen}) CCSID({self.ccsid_c})')
+
+            for file_path, member_name in file_list:
+                self.job.run_cl(
+                    f'CPYFRMSTMF FROMSTMF("{file_path}") '
+                    f'TOMBR("{self.iasp_prefix}/QSYS.LIB/{self.tmp_lib}.LIB/{srcfile}.FILE/{member_name}.MBR") '
+                    f'MBROPT(*REPLACE)')
 
 
 def cli():
