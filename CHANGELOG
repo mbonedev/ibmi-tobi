@@ -1,4 +1,4 @@
-- Added RCDLEN parameter to CRTBNDCL, CRTCLPGM, and CRTCLMOD recipes in def_rules.mk
+- Changed the default value of RCDLEN parameter to 240
 * Thu Mar 12 2026 Het Patel <het.patel@ibm.com> - 3.2.1
 - Added a new feature for IASP support.
 - Fixed Label on Table issue.
