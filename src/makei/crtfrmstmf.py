@@ -260,7 +260,7 @@ class CrtFrmStmf():
         """Determine the source file based on file extension"""
         path = Path(file_path)
         extension = path.suffix.lstrip('.').lower()
-        return EXTENSION_TO_SRCFILE_MAP.get(extension)
+        return EXTENSION_TO_SRCFILE_MAP.get(extension, 'QSOURCE')
 
     def _setup_and_copy_source_files(self):
         """Setup source physical files and copy all files (main source + dependencies) efficiently"""
