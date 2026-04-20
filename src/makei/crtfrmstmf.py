@@ -279,10 +279,6 @@ class CrtFrmStmf():
                 # Determine source file based on file extension
                 dep_srcfile = self._get_srcfile_for_extension(str(dep_path))
 
-                if not dep_srcfile:
-                    print(f"Warning: No source file mapping for extension of {dep_path}")
-                    continue
-
                 member_name = dep_path.stem.upper()
                 files_to_copy.append((str(dep_path), dep_srcfile, member_name))
 
