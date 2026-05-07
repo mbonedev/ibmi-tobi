@@ -264,7 +264,7 @@ def test_custom_recipe():
     commands0 = [
         "@$(call echo_cmd,=== Creating [CRTSBSD.FILE] from custom recipe)",
         'system -i "CRTSBSD SBSD(BATCHWL/BATCHSBSD) POOLS((1 *SHRPOOL3 *N *MB))"',
-        "@$(call echo_success_cmd,End of creating CRTSBSD.FILE)",
+        "@$(call echo_success_cmd,End of creating CRTSBSD.FILE!)",
     ]
     assert rules_mk.containing_dir == data_dir
     assert rules_mk.subdirs == []
@@ -281,7 +281,7 @@ def test_custom_recipe():
         == """CRTSBSD.FILE_CUSTOM_RECIPE=true
 CRTSBSD.FILE : \n\t@$(call echo_cmd,=== Creating [CRTSBSD.FILE] from custom recipe)
 \tsystem -i "CRTSBSD SBSD(BATCHWL/BATCHSBSD) POOLS((1 *SHRPOOL3 *N *MB))"
-\t@$(call echo_success_cmd,End of creating CRTSBSD.FILE)
+\t@$(call echo_success_cmd,End of creating CRTSBSD.FILE!)
 """
     )
     assert (
@@ -292,7 +292,7 @@ CRTSBSD.FILE : \n\t@$(call echo_cmd,=== Creating [CRTSBSD.FILE] from custom reci
 CRTSBSD.FILE_CUSTOM_RECIPE=true
 CRTSBSD.FILE : \n\t@$(call echo_cmd,=== Creating [CRTSBSD.FILE] from custom recipe)
 \tsystem -i "CRTSBSD SBSD(BATCHWL/BATCHSBSD) POOLS((1 *SHRPOOL3 *N *MB))"
-\t@$(call echo_success_cmd,End of creating CRTSBSD.FILE)
+\t@$(call echo_success_cmd,End of creating CRTSBSD.FILE!)
 """
     )
 
@@ -513,7 +513,7 @@ ART301D.FILE: DFRWRT = *NO\nART301D.FILE: ENHDSP = *NO\n"""
     assert rules_mk.rules[4].commands == [
         "@$(call echo_cmd,=== Creating [TMPDETORD.FILE] from custom recipe)",
         'system -i "CPYF FROMFILE($(OBJLIB)/DETORD) TOFILE($(OBJLIB)/TMPDETORD) CRTFILE(*YES)"',
-        "@$(call echo_success_cmd,End of creating TMPDETORD.FILE)",
+        "@$(call echo_success_cmd,End of creating TMPDETORD.FILE!)",
     ]
     assert rules_mk.rules[4].dependencies == []
     assert rules_mk.rules[4].include_dirs == []
@@ -524,7 +524,7 @@ ART301D.FILE: DFRWRT = *NO\nART301D.FILE: ENHDSP = *NO\n"""
         == """TMPDETORD.FILE_CUSTOM_RECIPE=true
 TMPDETORD.FILE : \n\t@$(call echo_cmd,=== Creating [TMPDETORD.FILE] from custom recipe)
 \tsystem -i "CPYF FROMFILE($(OBJLIB)/DETORD) TOFILE($(OBJLIB)/TMPDETORD) CRTFILE(*YES)"
-\t@$(call echo_success_cmd,End of creating TMPDETORD.FILE)\n"""
+\t@$(call echo_success_cmd,End of creating TMPDETORD.FILE!)\n"""
     )
 
     assert (
@@ -544,7 +544,7 @@ ORD500O.FILE_DEP=ORDER.FILE CUSTOMER.FILE DETORD.FILE ARTICLE.FILE
 ORD500O.FILE_RECIPE=PRTF_TO_FILE_RECIPE\nTMPDETORD.FILE_CUSTOM_RECIPE=true
 TMPDETORD.FILE : \n\t@$(call echo_cmd,=== Creating [TMPDETORD.FILE] from custom recipe)
 \tsystem -i "CPYF FROMFILE($(OBJLIB)/DETORD) TOFILE($(OBJLIB)/TMPDETORD) CRTFILE(*YES)"
-\t@$(call echo_success_cmd,End of creating TMPDETORD.FILE)
+\t@$(call echo_success_cmd,End of creating TMPDETORD.FILE!)
 """
     )
 

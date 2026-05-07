@@ -224,6 +224,9 @@ OBJECT_TARGET_PATTERNS := {target_patterns}
                 self.failed_targets.append(line.split()[-1].split("!")[0])
             if "was created successfully!" in line:
                 self.success_targets.append(line.split()[1])
+            if "End of creating" in line:
+                self.success_targets.append(line.split()[-1].split("!")[0])
+
             print_to_stdout(line)
 
         run_command(self.generate_make_cmd(), handle_make_output)
