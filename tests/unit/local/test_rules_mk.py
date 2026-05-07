@@ -1190,3 +1190,190 @@ ORD700A.TRG_SRC=ORD700A.SYSTRG
 ORD700A.TRG_DEP=TRGPGM.PGM MYPF1.FILE
 ORD700A.TRG_RECIPE=SYSTRG_TO_TRG_RECIPE
 """)
+
+
+def test_opmrpg_recipe():
+    # Test loading from a valid file
+    rules_mk = RulesMk.from_file(data_dir / "rpg.rules.mk", data_dir)
+    expected_targets = {
+        "TRGs": [],
+        "DTAARAs": [],
+        "DTAQs": [],
+        "SQLs": [],
+        "BNDDs": [],
+        "PFs": [],
+        "LFs": [],
+        "DSPFs": [],
+        "PRTFs": [],
+        "CMDs": [],
+        "MODULEs": [],
+        "SRVPGMs": [],
+        "PGMs": ["MAINPGM.PGM", "CPY02.PGM"],
+        "MENUs": [],
+        "PNLGRPs": [],
+        "QMQRYs": [],
+        "WSCSTs": [],
+        "MSGs": [],
+    }
+    assert rules_mk.src_obj_mapping["MAINPGM.RPG"] == ["MAINPGM.PGM"]
+    assert rules_mk.src_obj_mapping["CPY02.RPG"] == ["CPY02.PGM"]
+    assert rules_mk.containing_dir == data_dir
+    assert rules_mk.subdirs == []
+    assert rules_mk.targets == expected_targets
+
+    # Test MAINPGM.PGM rule
+    assert rules_mk.rules[0].variables == []
+    assert rules_mk.rules[0].commands == []
+    assert rules_mk.rules[0].dependencies == ["CPYBK1.RPG", "CPYBK2.RPG"]
+    assert rules_mk.rules[0].include_dirs == []
+    assert rules_mk.rules[0].target == "MAINPGM.PGM"
+    assert rules_mk.rules[0].source_file == "MAINPGM.RPG"
+    assert (
+        str(rules_mk.rules[0])
+        == """MAINPGM.PGM_SRC=MAINPGM.RPG
+MAINPGM.PGM_DEP=CPYBK1.RPG CPYBK2.RPG
+MAINPGM.PGM_RECIPE=RPG_TO_PGM_RECIPE
+"""
+    )
+
+    # Test CPY02.PGM rule
+    assert rules_mk.rules[1].variables == []
+    assert rules_mk.rules[1].commands == []
+    assert rules_mk.rules[1].dependencies == ["CPY01.RPGINC"]
+    assert rules_mk.rules[1].include_dirs == []
+    assert rules_mk.rules[1].target == "CPY02.PGM"
+    assert rules_mk.rules[1].source_file == "CPY02.RPG"
+    assert (
+        str(rules_mk.rules[1])
+        == """CPY02.PGM_SRC=CPY02.RPG
+CPY02.PGM_DEP=CPY01.RPGINC
+CPY02.PGM_RECIPE=RPG_TO_PGM_RECIPE
+"""
+    )
+
+    # Test full RulesMk string output
+    assert (
+        str(rules_mk)
+        == """PGMs := MAINPGM.PGM CPY02.PGM
+
+
+MAINPGM.PGM_SRC=MAINPGM.RPG
+MAINPGM.PGM_DEP=CPYBK1.RPG CPYBK2.RPG
+MAINPGM.PGM_RECIPE=RPG_TO_PGM_RECIPE
+CPY02.PGM_SRC=CPY02.RPG
+CPY02.PGM_DEP=CPY01.RPGINC
+CPY02.PGM_RECIPE=RPG_TO_PGM_RECIPE
+"""
+    )
+
+
+def test_opmsqlrpg_recipe():
+    # Test loading from a valid file
+    rules_mk = RulesMk.from_file(data_dir / "sqlrpg.rules.mk", data_dir)
+    expected_targets = {
+        "TRGs": [],
+        "DTAARAs": [],
+        "DTAQs": [],
+        "SQLs": [],
+        "BNDDs": [],
+        "PFs": [],
+        "LFs": [],
+        "DSPFs": [],
+        "PRTFs": [],
+        "CMDs": [],
+        "MODULEs": [],
+        "SRVPGMs": [],
+        "PGMs": ["MAINPGM22.PGM"],
+        "MENUs": [],
+        "PNLGRPs": [],
+        "QMQRYs": [],
+        "WSCSTs": [],
+        "MSGs": [],
+    }
+    assert rules_mk.src_obj_mapping["MAINPGM22.SQLRPG"] == ["MAINPGM22.PGM"]
+    assert rules_mk.containing_dir == data_dir
+    assert rules_mk.subdirs == []
+    assert rules_mk.targets == expected_targets
+
+    # Test MAINPGM.PGM rule
+    assert rules_mk.rules[0].variables == []
+    assert rules_mk.rules[0].commands == []
+    assert rules_mk.rules[0].dependencies == ["COPY01.RPG"]
+    assert rules_mk.rules[0].include_dirs == []
+    assert rules_mk.rules[0].target == "MAINPGM22.PGM"
+    assert rules_mk.rules[0].source_file == "MAINPGM22.SQLRPG"
+    assert (
+        str(rules_mk.rules[0])
+        == """MAINPGM22.PGM_SRC=MAINPGM22.SQLRPG
+MAINPGM22.PGM_DEP=COPY01.RPG
+MAINPGM22.PGM_RECIPE=SQLRPG_TO_PGM_RECIPE
+"""
+    )
+
+    # Test full RulesMk string output
+    assert (
+        str(rules_mk)
+        == """PGMs := MAINPGM22.PGM
+
+
+MAINPGM22.PGM_SRC=MAINPGM22.SQLRPG
+MAINPGM22.PGM_DEP=COPY01.RPG
+MAINPGM22.PGM_RECIPE=SQLRPG_TO_PGM_RECIPE
+"""
+    )
+
+
+def test_cbl_recipe():
+    # Test loading from a valid file
+    rules_mk = RulesMk.from_file(data_dir / "cbl.rules.mk", data_dir)
+    expected_targets = {
+        "TRGs": [],
+        "DTAARAs": [],
+        "DTAQs": [],
+        "SQLs": [],
+        "BNDDs": [],
+        "PFs": [],
+        "LFs": [],
+        "DSPFs": [],
+        "PRTFs": [],
+        "CMDs": [],
+        "MODULEs": [],
+        "SRVPGMs": [],
+        "PGMs": ["SIMPLE.PGM"],
+        "MENUs": [],
+        "PNLGRPs": [],
+        "QMQRYs": [],
+        "WSCSTs": [],
+        "MSGs": [],
+    }
+    assert rules_mk.src_obj_mapping["SIMPLE.CBL"] == ["SIMPLE.PGM"]
+    assert rules_mk.containing_dir == data_dir
+    assert rules_mk.subdirs == []
+    assert rules_mk.targets == expected_targets
+
+    # Test MAINPGM.PGM rule
+    assert rules_mk.rules[0].variables == []
+    assert rules_mk.rules[0].commands == []
+    assert rules_mk.rules[0].dependencies == ["DATACPY.CBL"]
+    assert rules_mk.rules[0].include_dirs == []
+    assert rules_mk.rules[0].target == "SIMPLE.PGM"
+    assert rules_mk.rules[0].source_file == "SIMPLE.CBL"
+    assert (
+        str(rules_mk.rules[0])
+        == """SIMPLE.PGM_SRC=SIMPLE.CBL
+SIMPLE.PGM_DEP=DATACPY.CBL
+SIMPLE.PGM_RECIPE=CBL_TO_PGM_RECIPE
+"""
+    )
+
+    # Test full RulesMk string output
+    assert (
+        str(rules_mk)
+        == """PGMs := SIMPLE.PGM
+
+
+SIMPLE.PGM_SRC=SIMPLE.CBL
+SIMPLE.PGM_DEP=DATACPY.CBL
+SIMPLE.PGM_RECIPE=CBL_TO_PGM_RECIPE
+"""
+    )

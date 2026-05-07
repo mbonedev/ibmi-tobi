@@ -14,7 +14,7 @@ from shutil import move, copymode
 from tempfile import mkstemp, gettempdir
 from typing import Callable, Optional, Tuple, Union
 
-from makei.const import FILE_MAX_EXT_LENGTH, FILE_TARGET_MAPPING, COMMENT_STYLES
+from makei.const import FILE_MAX_EXT_LENGTH, FILE_TARGET_MAPPING, COMMENT_STYLES, TARGET_TARGETGROUPS_MAPPING
 
 
 class Colors(str, Enum):
@@ -25,6 +25,12 @@ class Colors(str, Enum):
     WARNING = '\033[93m'
     FAIL = '\033[91m'
     ENDC = '\033[0m'
+
+
+def get_target_patterns_for_makefile() -> str:
+    """Returns String in format: "%.MODULE %.SRVPGM %.PGM %.FILE %.BNDDIR %.CMD %.MSGF"
+    """
+    return ' '.join(f'%.{target_type}' for target_type in sorted(TARGET_TARGETGROUPS_MAPPING.keys()))
 
 
 def colored(message: str, color: Colors) -> str:
