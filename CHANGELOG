@@ -1,3 +1,4 @@
+- Added support for custom make files.
 - Fixed success_targets tracking for custom recipes. 
 - Added support for dependencies in OPM RPG and Cobol programs and created a recipe for SQLRPG source.
 - Changed the default value of RCDLEN parameter to 240
