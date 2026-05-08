@@ -229,7 +229,15 @@ OBJECT_TARGET_PATTERNS := {target_patterns}
 
             print_to_stdout(line)
 
-        run_command(self.generate_make_cmd(), handle_make_output)
+        exit_code = run_command(self.generate_make_cmd(), handle_make_output)
+        custom_makefile = os.environ.get('TOBI_CUSTOM_MAKEFILE')
+        if custom_makefile and not self.success_targets and not self.failed_targets:
+            if self.targets and self.targets[0] != "all":
+                if exit_code == 0:
+                    self.success_targets.append(self.targets[0])
+                else:
+                    self.failed_targets.append(self.targets[0])
+
         self._post_make()
         return not self.failed_targets
 
