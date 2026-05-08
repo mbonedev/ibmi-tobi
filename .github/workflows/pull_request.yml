@@ -72,7 +72,6 @@ jobs:
             --rcwd "./builds/github_ci/${GITHUB_SHA}/ibmi_tobi" \
             --push "." \
             --cmd "echo Setting up ${{ matrix.project.name }}..." \
-            --ignore --cl "DLTLIB $(so -bl ${GITHUB_HEAD_REF}_${{ matrix.project.name }})" \
             --ignore --cl "CRTLIB $(so -bl ${GITHUB_HEAD_REF}_${{ matrix.project.name }})" \
             --ignore --cl "CLRLIB $(so -bl ${GITHUB_HEAD_REF}_${{ matrix.project.name }})" \
             --cmd "rm -rf ../${{ matrix.project.name }}" \
