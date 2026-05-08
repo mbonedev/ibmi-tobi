@@ -1,3 +1,4 @@
+* Fri May 08 2026 Het Patel <het.patel@ibm.com> - 3.3.0
 - Added support for custom make files.
 - Fixed success_targets tracking for custom recipes. 
 - Added support for dependencies in OPM RPG and Cobol programs and created a recipe for SQLRPG source.
