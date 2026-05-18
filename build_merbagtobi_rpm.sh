@@ -160,9 +160,12 @@ EOF
 
 # RPM bauen
 echo "🔨 Baue RPM..."
+# rpmbuild schreibt Script-Trace (+ ...) auf STDERR; in CI (failOnStdErr) als STDOUT behandeln.
 rpmbuild \
   --define "_topdir $RPMBUILD_DIR" \
-  -ba "$SPEC_FILE"
+    --quiet \
+    -ba "$SPEC_FILE" \
+    2>&1
 
 # RPM in Zielverzeichnis kopieren
 echo "📤 Kopiere RPM nach $RPM_OUTPUT_DIR"
