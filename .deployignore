@@ -1,0 +1,12 @@
+**/.vscode
+AUTHORS.md
+CHANGELOG
+LICENSE
+iproj.json
+noxfile.py
+pytest.ini
+README.md
+setup.cfg
+docs/
+tests/
+tools/
