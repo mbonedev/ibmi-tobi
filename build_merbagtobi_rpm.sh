@@ -56,7 +56,7 @@ SPEC_FILE="$RPMBUILD_DIR/SPECS/merbag-tobi.spec"
 SOURCE_BASENAME=$(basename "$SRC_DIR")
 SOURCE_ARCHIVE="merbag-tobi.tar.gz"
 
-VERSION="3.3.0"
+VERSION="3.4.0"
 
 echo "✅ Starte RPM Build Prozess für IBM i TOBI..."
 

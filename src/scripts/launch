@@ -71,7 +71,8 @@ fi
 
 if [ -n "$precmd" ]; then
   echo ">> precmd: ${precmd}"
-  cl $cl_parms "$precmd"
+  # cl $cl_parms "$precmd"
+  eval $precmd # Using eval to allow system commands in precmd
 fi
 cl $cl_parms "$cmd" 
 exitCode=$?
@@ -80,7 +81,8 @@ if [ -n "$text_command" ]; then
 fi
 if [ -n "$postcmd" ]; then
   echo ">> postcmd: ${postcmd}"
-  cl $cl_parms "$postcmd"
+  # cl $cl_parms "$postcmd"
+  eval $postcmd # Using eval to allow system commands in postcmd
 fi
 
 if [ $exitCode -eq 0 ]; then
