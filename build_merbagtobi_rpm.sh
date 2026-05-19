@@ -174,8 +174,25 @@ find $RPMBUILD_DIR/RPMS -name "merbag-tobi*.rpm" -exec cp {} $RPM_OUTPUT_DIR/ \;
 RPM_FILE=$(find $RPM_OUTPUT_DIR -name "merbag-tobi*.rpm" | head -1)
 
 # Installation
-# echo "📥 Installiere RPM via yum: $RPM_FILE"
-yum erase -y merbag-tobi
-yum -y install "$RPM_FILE"
+echo "📥 Installiere RPM via yum: $RPM_FILE"
+
+# STDERR aus yum abfangen (wichtig für CI failOnStdErr) und Timeout-Meldungen gezielt markieren.
+yum erase -y merbag-tobi 2>&1 || true
+
+INSTALL_LOG=$(mktemp)
+yum -y install "$RPM_FILE" >"$INSTALL_LOG" 2>&1
+YUM_RC=$?
+
+if grep -qiE "(Timeout on https://public\.dhe\.ibm\.com|Resolving timed out|Trying other mirror)" "$INSTALL_LOG"; then
+    echo "⚠️ Mirror-Timeout erkannt und abgefangen."
+fi
+
+cat "$INSTALL_LOG"
+rm -f "$INSTALL_LOG"
+
+if [ $YUM_RC -ne 0 ]; then
+    echo "❌ yum-Installation fehlgeschlagen (Exit-Code: $YUM_RC)."
+    exit $YUM_RC
+fi
 
 echo "✅ Fertig! TOBI ist nun als 'merbag-tobi' installiert."
